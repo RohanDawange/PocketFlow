@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>PocketFlow 💰</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:'Plus Jakarta Sans',sans-serif}
+:root{
+  --bg:#F5F4F0;--card:#FFFFFF;--card2:#F2F2F7;--text:#1C1C1E;--sub:#8E8E93;
+  --border:#E5E5EA;--primary:#22C55E;--primary-dark:#16A34A;--red:#EF4444;--orange:#F59E0B;
+}
+.dark{
+  --bg:#0F0F0F;--card:#1C1C1E;--card2:#2C2C2E;--text:#FFFFFF;--sub:#8E8E93;--border:#3A3A3C;
+}
+body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+#app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;overflow:hidden}
+::-webkit-scrollbar{display:none}
+
+/* SCREENS */
+.screen{display:none;padding:20px 20px 100px;min-height:100vh;overflow-y:auto;animation:fadeIn .25s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* NAV */
+#bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;cursor:pointer;padding:9px 0 11px;color:var(--sub);transition:color .2s}
+.nav-item.active{color:var(--primary)}
+.nav-item span:first-child{font-size:22px}
+.nav-item label{font-size:10px;font-weight:600;cursor:pointer}
+.nav-dot{width:4px;height:4px;border-radius:2px;background:var(--primary);display:none}
+.nav-item.active .nav-dot{display:block}
+
+/* CARDS */
+.card{background:var(--card);border-radius:20px;padding:16px 20px;box-shadow:0 2px 16px rgba(0,0,0,.06);margin-bottom:14px}
+.card-sm{background:var(--card);border-radius:16px;padding:14px 18px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+
+/* HEADINGS */
+.page-title{font-size:22px;font-weight:800;color:var(--text);margin:10px 0 4px}
+.page-sub{font-size:13px;color:var(--sub);margin-bottom:20px}
+
+/* EXPENSE ROW */
+.exp-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)}
+.exp-row:last-child{border-bottom:none}
+.exp-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.exp-title{font-weight:600;font-size:15px}
+.exp-sub{font-size:12px;color:var(--sub);margin-top:2px}
+.exp-amount{font-weight:800;font-size:16px;margin-left:auto;flex-shrink:0}
+.exp-actions{display:flex;gap:2px;flex-shrink:0}
+.exp-actions button{border:none;background:none;cursor:pointer;font-size:17px;padding:4px;border-radius:8px;transition:background .15s}
+.exp-actions button:hover{background:var(--card2)}
+
+/* SECTION LABEL */
+.section-label{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.8px;margin-bottom:10px}
+
+/* BUTTONS */
+.btn-primary{background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;border:none;border-radius:16px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;box-shadow:0 8px 24px rgba(34,197,94,.3);transition:transform .1s,box-shadow .1s}
+.btn-primary:active{transform:scale(.98);box-shadow:0 4px 12px rgba(34,197,94,.3)}
+.btn-ghost{background:none;color:var(--text);border:1.5px solid var(--border);border-radius:16px;padding:16px;font-size:16px;font-weight:600;cursor:pointer;width:100%;font-family:inherit;transition:background .15s}
+.btn-ghost:hover{background:var(--card2)}
+
+/* FAB */
+#fab{position:fixed;bottom:90px;right:max(20px,calc(50vw - 195px));width:60px;height:60px;border-radius:30px;background:linear-gradient(135deg,#22C55E,#16A34A);border:none;cursor:pointer;font-size:32px;color:#fff;box-shadow:0 8px 28px rgba(34,197,94,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s,box-shadow .15s;line-height:1}
+#fab:active{transform:scale(.93)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadeOverlay .2s ease}
+@keyframes fadeOverlay{from{opacity:0}to{opacity:1}}
+.modal-sheet{background:var(--card);width:100%;max-width:430px;border-radius:28px 28px 0 0;padding:24px 24px 44px;animation:slideUp .3s ease;max-height:92vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 20px}
+.modal-title{font-size:20px;font-weight:800;color:var(--text);text-align:center;margin-bottom:24px}
+
+/* INPUT */
+input,select{background:var(--card2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;font-size:15px;color:var(--text);width:100%;font-family:inherit;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--primary)}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* CATEGORY CHIPS */
+.cat-chips{display:flex;gap:8px;flex-wrap:wrap}
+.cat-chip{padding:8px 14px;border-radius:50px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;transition:all .15s;background:var(--card2);color:var(--text)}
+.cat-chip.active{color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+
+/* HEATMAP */
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.heatmap-day-label{text-align:center;font-size:9px;font-weight:700;color:var(--sub);padding:3px 0}
+.heatmap-cell{border-radius:7px;cursor:pointer;transition:transform .1s;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;border:none;width:100%}
+.heatmap-cell:active{transform:scale(.9)}
+
+/* INSIGHT CARD */
+.insight-card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.06);border-left:3px solid var(--primary);display:flex;align-items:flex-start;gap:10px}
+.insight-card .ic-emoji{font-size:20px;flex-shrink:0;margin-top:1px}
+.insight-card .ic-text{font-size:14px;color:var(--text);font-weight:500;line-height:1.45}
+
+/* TOGGLE */
+.toggle{width:50px;height:30px;border-radius:15px;background:var(--border);position:relative;cursor:pointer;transition:background .3s;border:none;flex-shrink:0}
+.toggle.on{background:var(--primary)}
+.toggle::after{content:'';position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:11px;background:#fff;transition:left .3s;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.toggle.on::after{left:24px}
+
+/* SETTINGS ROW */
+.setting-row{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer}
+.setting-row .sr-icon{font-size:20px}
+.setting-row .sr-label{flex:1;font-size:15px;font-weight:500}
+.setting-row .sr-arrow{color:var(--sub);font-size:18px;font-weight:700}
+.setting-divider{height:1px;background:var(--border);margin:0 20px}
+
+/* QUICK ADD */
+.quick-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.quick-chip{padding:10px 16px;border-radius:50px;border:1.5px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;white-space:nowrap;font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:transform .1s}
+.quick-chip:active{transform:scale(.96)}
+
+/* SEARCH */
+.search-box{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:11px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:12px}
+.search-box input{border:none;background:none;padding:0;border-radius:0;font-size:15px;flex:1}
+.search-box input:focus{border-color:transparent}
+
+/* FILTER CHIPS */
+.filter-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}
+.filter-chip{padding:6px 14px;border-radius:50px;border:none;cursor:pointer;flex-shrink:0;background:var(--card);color:var(--text);font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:all .15s}
+.filter-chip.active{color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat-card{background:var(--card);border-radius:20px;padding:18px 20px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
+.stat-label{font-size:10px;color:var(--sub);font-weight:700;letter-spacing:.8px;margin-bottom:4px}
+.stat-value{font-size:30px;font-weight:800;line-height:1}
+.stat-hint{font-size:11px;color:var(--sub);margin-top:4px}
+
+/* BUDGET BAR */
+.budget-bar-bg{height:10px;border-radius:5px;background:var(--card2);overflow:hidden;margin-top:10px}
+.budget-bar-fill{height:100%;border-radius:5px;transition:width .7s ease}
+
+/* CONFIRM MODAL */
+.confirm-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+.confirm-box{background:var(--card);border-radius:24px;padding:28px;max-width:320px;width:100%;text-align:center}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 0;color:var(--sub)}
+.empty-state .es-icon{font-size:52px;margin-bottom:12px}
+.empty-state .es-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.empty-state .es-sub{font-size:13px}
+
+/* LEGEND */
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub)}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* CURRENCY OPTION */
+.currency-grid{display:flex;gap:8px;flex-wrap:wrap}
+.cur-btn{padding:10px 20px;border-radius:12px;border:none;cursor:pointer;background:var(--card2);color:var(--text);font-size:18px;font-weight:700;transition:all .15s}
+.cur-btn.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(34,197,94,.3)}
+
+/* CHART CONTAINER */
+.chart-wrap{position:relative;width:100%;height:180px;margin-top:8px}
+
+/* GROUP HEADER */
+.group-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-left:4px}
+.group-date{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.5px}
+.group-total{font-size:12px;font-weight:800;color:var(--primary)}
+
+/* STREAK BADGE */
+.streak-badge{background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+.streak-num{font-size:18px;font-weight:800;color:#92400E;line-height:1}
+.streak-lbl{font-size:9px;font-weight:700;color:#B45309}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:999;transition:opacity .4s}
+#loader.hide{opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div style="font-size:56px">💰</div>
+  <div style="font-size:22px;font-weight:900;color:var(--primary);letter-spacing:-.5px">PocketFlow</div>
+  <div style="font-size:13px;color:var(--sub)">Loading your wallet...</div>
+</div>
+
+<div id="app">
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <div style="padding-top:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-size:22px;font-weight:900;letter-spacing:-.5px">💰 PocketFlow</div>
+        <div id="home-date" style="font-size:13px;color:var(--sub);margin-top:2px"></div>
+      </div>
+      <div id="streak-badge-home" style="display:none" class="streak-badge">
+        <span style="font-size:22px">🔥</span>
+        <div><div class="streak-num" id="streak-num">0</div><div class="streak-lbl">day streak</div></div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stat-grid">
+      <div style="background:linear-gradient(135deg,#22C55E,#16A34A);border-radius:20px;padding:18px 20px;box-shadow:0 8px 24px rgba(34,197,94,.3)">
+        <div class="stat-label" style="color:rgba(255,255,255,.75)">TODAY</div>
+        <div class="stat-value" style="color:#fff" id="today-total">₹0</div>
+        <div class="stat-hint" style="color:rgba(255,255,255,.7)">spent today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">REMAINING</div>
+        <div class="stat-value" id="remaining-total">₹0</div>
+        <div class="stat-hint" id="remaining-hint">of ₹5000</div>
+      </div>
+    </div>
+
+    <!-- BUDGET BAR -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700">Monthly Budget</span>
+        <span id="budget-pct-label" style="font-size:13px;font-weight:800;color:var(--primary)">0% used</span>
+      </div>
+      <div class="budget-bar-bg"><div id="budget-bar-fill" class="budget-bar-fill" style="width:0%;background:linear-gradient(90deg,#4ADE80,#22C55E)"></div></div>
+      <div id="budget-warning" style="display:none;margin-top:8px;font-size:12px;color:var(--red);font-weight:600">⚠️ Budget alert — running low!</div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span id="heatmap-title" style="font-size:14px;font-weight:700"></span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <div style="width:10px;height:10px;border-radius:3px;background:#EEEDE9"></div>
+          <div style="width:10px;height:10px;border-radius:3px;background:#BBF7D0"></div>
+          <div style="width:10px;height:10px;border-radius:3px;background:#4ADE80"></div>
+          <div style="width:10px;height:10px;border-radius:3px;background:#16A34A"></div>
+          <span style="font-size:10px;color:var(--sub);margin-left:2px">more</span>
+        </div>
+      </div>
+      <div id="home-heatmap"></div>
+    </div>
+
+    <!-- QUICK ADD -->
+    <div style="margin-bottom:14px">
+      <div class="section-label">QUICK ADD</div>
+      <div class="quick-chips" id="quick-chips"></div>
+    </div>
+
+    <!-- RECENT -->
+    <div style="margin-bottom:20px">
+      <div class="section-label">RECENT EXPENSES</div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="screen-history" class="screen">
+    <div class="page-title">History</div>
+    <div class="page-sub">All your transactions</div>
+    <div class="search-box">
+      <span style="font-size:16px">🔍</span>
+      <input id="search-input" type="text" placeholder="Search by category or note..."/>
+      <button id="search-clear" onclick="clearSearch()" style="display:none;border:none;background:none;cursor:pointer;color:var(--sub);font-size:18px">✕</button>
+    </div>
+    <div class="filter-chips" id="filter-chips"></div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="screen-calendar" class="screen">
+    <div class="page-title">Calendar</div>
+    <div class="page-sub">Tap any day to see details</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <button onclick="calPrev()" style="border:none;background:var(--card2);border-radius:10px;width:40px;height:40px;cursor:pointer;color:var(--text);font-size:20px;font-weight:700">‹</button>
+        <div style="text-align:center">
+          <div id="cal-title" style="font-size:18px;font-weight:800"></div>
+          <div id="cal-total" style="font-size:12px;color:var(--sub);margin-top:2px"></div>
+        </div>
+        <button onclick="calNext()" style="border:none;background:var(--card2);border-radius:10px;width:40px;height:40px;cursor:pointer;color:var(--text);font-size:20px;font-weight:700">›</button>
+      </div>
+      <div id="cal-heatmap"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-label" style="margin-bottom:12px">SPENDING INTENSITY</div>
+      <div style="display:flex;gap:6px">
+        <div style="flex:1;text-align:center"><div style="height:22px;border-radius:6px;background:#EEEDE9;margin-bottom:4px"></div><div style="font-size:9px;color:var(--sub);font-weight:600">None</div></div>
+        <div style="flex:1;text-align:center"><div style="height:22px;border-radius:6px;background:#BBF7D0;margin-bottom:4px"></div><div style="font-size:9px;color:var(--sub);font-weight:600">≤₹50</div></div>
+        <div style="flex:1;text-align:center"><div style="height:22px;border-radius:6px;background:#4ADE80;margin-bottom:4px"></div><div style="font-size:9px;color:var(--sub);font-weight:600">≤₹150</div></div>
+        <div style="flex:1;text-align:center"><div style="height:22px;border-radius:6px;background:#22C55E;margin-bottom:4px"></div><div style="font-size:9px;color:var(--sub);font-weight:600">≤₹300</div></div>
+        <div style="flex:1;text-align:center"><div style="height:22px;border-radius:6px;background:#16A34A;margin-bottom:4px"></div><div style="font-size:9px;color:var(--sub);font-weight:600">>₹300</div></div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">NO-SPEND DAYS</div><div class="stat-value" id="cal-nospend">0</div><div class="stat-hint">this month 🌿</div></div>
+      <div class="stat-card"><div class="stat-label">ACTIVE DAYS</div><div class="stat-value" id="cal-active">0</div><div class="stat-hint">with expenses</div></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div id="screen-insights" class="screen">
+    <div class="page-title">Insights</div>
+    <div class="page-sub">Your spending patterns</div>
+    <div id="insights-content"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="screen-settings" class="screen">
+    <div class="page-title">Settings</div>
+
+    <div class="section-label" style="padding-left:4px">BUDGET</div>
+    <div class="card" style="padding:16px 20px">
+      <div style="font-size:13px;color:var(--sub);font-weight:600;margin-bottom:8px">Monthly Budget</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="budget-currency-sym" style="font-size:20px;font-weight:800;color:var(--primary)">₹</span>
+        <input id="budget-input" type="number" placeholder="5000" style="font-size:17px;font-weight:700"/>
+        <button onclick="saveBudget()" style="padding:10px 16px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer">Save</button>
+      </div>
+    </div>
+
+    <div class="section-label" style="padding-left:4px;margin-top:10px">APPEARANCE</div>
+    <div class="card" style="padding:0">
+      <div class="setting-row" onclick="toggleDark()">
+        <span class="sr-icon">🌙</span>
+        <span class="sr-label">Dark Mode</span>
+        <button id="dark-toggle" class="toggle" onclick="event.stopPropagation();toggleDark()"></button>
+      </div>
+    </div>
+
+    <div class="section-label" style="padding-left:4px;margin-top:10px">CURRENCY</div>
+    <div class="card">
+      <div class="currency-grid" id="currency-grid"></div>
+    </div>
+
+    <div class="section-label" style="padding-left:4px;margin-top:10px">CUSTOM CATEGORIES</div>
+    <div class="card">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="new-cat-emoji" placeholder="🎯" style="width:52px;padding:9px 6px;text-align:center;font-size:18px;border-radius:10px"/>
+        <input id="new-cat-name" placeholder="Category name" style="flex:1;border-radius:10px;font-size:14px"/>
+        <button onclick="addCustomCat()" style="padding:9px 14px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer">Add</button>
+      </div>
+      <div id="custom-cat-list"></div>
+    </div>
+
+    <div class="section-label" style="padding-left:4px;margin-top:10px">DATA</div>
+    <div class="card" style="padding:0">
+      <div class="setting-row" onclick="exportCSV()">
+        <span class="sr-icon">📥</span>
+        <span class="sr-label" id="export-label">Export CSV</span>
+        <span class="sr-arrow">›</span>
+      </div>
+      <div class="setting-divider"></div>
+      <div class="setting-row" onclick="showResetConfirm()" style="color:var(--red)">
+        <span class="sr-icon">⚠️</span>
+        <span class="sr-label" style="color:var(--red)">Reset All Data</span>
+        <span class="sr-arrow" style="color:var(--red)">›</span>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:20px 0 40px;color:var(--sub);font-size:13px;font-weight:500">PocketFlow v1.0 • Made with 💚</div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('home',this)"><span>🏠</span><label>Home</label><div class="nav-dot"></div></button>
+    <button class="nav-item" onclick="switchTab('history',this)"><span>📋</span><label>History</label><div class="nav-dot"></div></button>
+    <button class="nav-item" onclick="switchTab('calendar',this)"><span>📅</span><label>Calendar</label><div class="nav-dot"></div></button>
+    <button class="nav-item" onclick="switchTab('insights',this)"><span>📊</span><label>Insights</label><div class="nav-dot"></div></button>
+    <button class="nav-item" onclick="switchTab('settings',this)"><span>⚙️</span><label>Settings</label><div class="nav-dot"></div></button>
+  </nav>
+
+  <!-- FAB -->
+  <button id="fab" onclick="openAddModal()">+</button>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="add-modal" style="display:none" class="modal-overlay" onclick="handleOverlayClick(event,'add-modal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">New Expense</div>
+    <!-- Amount -->
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.8px;margin-bottom:8px">AMOUNT</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <span id="modal-currency" style="font-size:32px;font-weight:800;color:var(--primary)">₹</span>
+        <input id="modal-amount" type="number" inputmode="decimal" placeholder="0" style="font-size:52px;font-weight:800;width:180px;border:none;background:transparent;color:var(--text);text-align:center;border-radius:0;padding:0"/>
+      </div>
+      <div style="height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);margin:4px 40px 0"></div>
+    </div>
+    <!-- Category -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.8px;margin-bottom:10px">CATEGORY</div>
+      <div class="cat-chips" id="modal-cats"></div>
+    </div>
+    <!-- Note -->
+    <input id="modal-note" type="text" placeholder="Add a note... (optional)" style="margin-bottom:14px"/>
+    <!-- Date Time -->
+    <div style="display:flex;gap:10px;margin-bottom:24px">
+      <input id="modal-date" type="date" style="flex:1;padding:11px 12px;font-size:14px"/>
+      <input id="modal-time" type="time" style="flex:1;padding:11px 12px;font-size:14px"/>
+    </div>
+    <!-- Buttons -->
+    <div style="display:flex;gap:12px">
+      <button class="btn-ghost" style="flex:1" onclick="closeModal('add-modal')">Cancel</button>
+      <button class="btn-primary" style="flex:2" onclick="saveExpense()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY MODAL -->
+<div id="day-modal" style="display:none" class="modal-overlay" onclick="handleOverlayClick(event,'day-modal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 id="day-modal-title" style="font-size:18px;font-weight:800;color:var(--text)"></h2>
+      <button onclick="closeModal('day-modal')" style="border:none;background:var(--card2);border-radius:10px;padding:6px 12px;cursor:pointer;color:var(--sub);font-size:16px;font-weight:600">✕</button>
+    </div>
+    <div id="day-modal-content"></div>
+  </div>
+</div>
+
+<!-- CONFIRM RESET MODAL -->
+<div id="confirm-modal" style="display:none" class="confirm-overlay">
+  <div class="confirm-box">
+    <div style="font-size:52px;margin-bottom:16px">⚠️</div>
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Reset All Data?</div>
+    <div style="font-size:14px;color:var(--sub);margin-bottom:24px;line-height:1.5">This will permanently delete all your expenses. This cannot be undone.</div>
+    <div style="display:flex;gap:12px">
+      <button class="btn-ghost" onclick="closeModal('confirm-modal')">Cancel</button>
+      <button onclick="resetAll()" style="flex:1;padding:14px;border-radius:14px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Delete All</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS_S = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAYS_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAYS_S = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+const DEFAULT_CATS = [
+  {id:"food",label:"Food",emoji:"🍔",color:"#FF6B6B"},
+  {id:"travel",label:"Travel",emoji:"🚌",color:"#06B6D4"},
+  {id:"shopping",label:"Shopping",emoji:"🛍️",color:"#A855F7"},
+  {id:"entertainment",label:"Entertainment",emoji:"🎬",color:"#F59E0B"},
+  {id:"recharge",label:"Recharge",emoji:"📱",color:"#3B82F6"},
+  {id:"study",label:"Study",emoji:"📚",color:"#10B981"},
+  {id:"other",label:"Other",emoji:"⭐",color:"#6B7280"},
+];
+
+const QUICK_PRESETS = [
+  {label:"Tea",amount:10,category:"food",emoji:"☕"},
+  {label:"Snack",amount:20,category:"food",emoji:"🍿"},
+  {label:"Bus",amount:30,category:"travel",emoji:"🚌"},
+  {label:"Water",amount:5,category:"other",emoji:"💧"},
+];
+
+let state = {
+  expenses: [],
+  budget: 0,
+  currency: "₹",
+  darkMode: false,
+  customCats: [],
+};
+
+let calYear, calMonth;
+let editingId = null;
+let selectedCat = "food";
+let filterCat = "all";
+let pieChart = null, barChart = null;
+
+// ═══════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════
+function save() { localStorage.setItem("pocketflow", JSON.stringify(state)); }
+function load() {
+  try {
+    const d = localStorage.getItem("pocketflow");
+    if (d) state = JSON.parse(d);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function today() { return new Date().toISOString().split("T")[0]; }
+function nowTime() { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function pad(n) { return String(n).padStart(2,"0"); }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function dayFull(ds) { return DAYS_FULL[new Date(ds+"T00:00:00").getDay()]; }
+function dispDate(ds) {
+  const d = new Date(ds+"T00:00:00");
+  return `${d.getDate()} ${MONTHS_S[d.getMonth()]} • ${DAYS_FULL[d.getDay()].slice(0,3)}`;
+}
+function allCats() { return [...DEFAULT_CATS, ...state.customCats]; }
+function getCat(id) { return allCats().find(c=>c.id===id) || allCats().at(-1); }
+function cur() { return state.currency; }
+
+function heatColor(amt) {
+  if (!amt) return state.darkMode ? "#2A2A2A" : "#EEEDE9";
+  if (amt<=50) return "#BBF7D0";
+  if (amt<=150) return "#4ADE80";
+  if (amt<=300) return "#22C55E";
+  return "#16A34A";
+}
+
+function spendByDate() {
+  const m = {};
+  state.expenses.forEach(e => { m[e.date]=(m[e.date]||0)+Number(e.amount); });
+  return m;
+}
+
+function todayTotal() { return spendByDate()[today()]||0; }
+
+function monthTotal(yr, mo) {
+  const prefix = `${yr}-${pad(mo+1)}`;
+  return state.expenses.filter(e=>e.date.startsWith(prefix)).reduce((s,e)=>s+Number(e.amount),0);
+}
+
+function calcStreak() {
+  const sbd = spendByDate();
+  let count=0, d=new Date();
+  d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const ds=d.toISOString().split("T")[0];
+    if(sbd[ds]) break;
+    count++; d.setDate(d.getDate()-1);
+  }
+  return count;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(name, el) {
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+  el.classList.add("active");
+  document.getElementById("fab").style.display = name==="home"?"flex":"none";
+  renderScreen(name);
+}
+
+function renderScreen(name) {
+  if(name==="home") renderHome();
+  else if(name==="history") renderHistory();
+  else if(name==="calendar") renderCalendar();
+  else if(name==="insights") renderInsights();
+  else if(name==="settings") renderSettings();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HEATMAP
+// ═══════════════════════════════════════════════════════════
+function buildHeatmap(containerId, yr, mo, size) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const sbd = spendByDate();
+  const daysInMonth = new Date(yr,mo+1,0).getDate();
+  const firstDay = new Date(yr,mo,1).getDay();
+  const todayStr = today();
+
+  let html = '<div class="heatmap-grid">';
+  DAYS_S.forEach(d => { html += `<div class="heatmap-day-label">${d}</div>`; });
+  for(let i=0;i<firstDay;i++) html += '<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = `${yr}-${pad(mo+1)}-${pad(d)}`;
+    const amt = sbd[ds]||0;
+    const isToday = ds===todayStr;
+    const bg = heatColor(amt);
+    const textColor = amt>150?"#fff":state.darkMode?"#aaa":"#666";
+    html += `<button class="heatmap-cell" onclick="openDayModal('${ds}')" style="background:${bg};border:${isToday?`2px solid var(--primary)`:'none'};color:${textColor}">${d}</button>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════════
+function renderHome() {
+  const now = new Date();
+  document.getElementById("home-date").textContent = `${now.getDate()} ${MONTHS[now.getMonth()]} • ${DAYS_FULL[now.getDay()]}`;
+
+  // Streak
+  const streak = calcStreak();
+  const sb = document.getElementById("streak-badge-home");
+  if(streak>0){ sb.style.display="flex"; document.getElementById("streak-num").textContent=streak; }
+  else sb.style.display="none";
+
+  // Stats
+  const tt = todayTotal();
+  const mt = monthTotal(now.getFullYear(), now.getMonth());
+  const rem = state.budget - mt;
+  const pct = state.budget > 0 ? Math.min(100,(mt/state.budget)*100) : 0;
+
+  document.getElementById("today-total").textContent = `${cur()}${tt}`;
+  const remEl = document.getElementById("remaining-total");
+  remEl.textContent = `${cur()}${Math.max(0,rem)}`;
+  remEl.style.color = rem<0?"var(--red)":"var(--text)";
+  document.getElementById("remaining-hint").textContent = `of ${cur()}${state.budget}`;
+  document.getElementById("budget-pct-label").textContent = `${pct.toFixed(0)}% used`;
+  document.getElementById("budget-pct-label").style.color = pct>=80?"var(--red)":"var(--primary)";
+
+  const fill = document.getElementById("budget-bar-fill");
+  fill.style.width = pct+"%";
+  fill.style.background = pct>=80?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#4ADE80,#22C55E)";
+  document.getElementById("budget-warning").style.display = pct>=80?"block":"none";
+
+  // Heatmap
+  document.getElementById("heatmap-title").textContent = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  buildHeatmap("home-heatmap", now.getFullYear(), now.getMonth(), 30);
+
+  // Quick Add
+  const qc = document.getElementById("quick-chips");
+  qc.innerHTML = QUICK_PRESETS.map(q=>`<button class="quick-chip" onclick="quickAdd('${q.label}',${q.amount},'${q.category}')">${q.emoji} +${q.label} ${cur()}${q.amount}</button>`).join("");
+
+  // Recent
+  const rl = document.getElementById("recent-list");
+  const recent = state.expenses.slice(0,8);
+  if(!recent.length){
+    rl.innerHTML=`<div class="card"><div class="empty-state"><div class="es-icon">🌱</div><div class="es-title">No expenses yet</div><div class="es-sub">Tap + to add your first expense</div></div></div>`;
+    return;
+  }
+  const todayStr = today();
+  rl.innerHTML=`<div class="card" style="padding:4px 0">${recent.map(e=>{
+    const cat=getCat(e.category);
+    const dateLabel = e.date===todayStr?"Today":dispDate(e.date);
+    return `<div class="exp-row">
+      <div class="exp-icon" style="background:${cat.color}22">${cat.emoji}</div>
+      <div style="flex:1"><div class="exp-title">${e.note||cat.label}</div><div class="exp-sub">${dateLabel} • ${e.time}</div></div>
+      <div class="exp-amount">−${cur()}${e.amount}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════
+function renderHistory() {
+  const cats = allCats();
+  const fc = document.getElementById("filter-chips");
+  fc.innerHTML = `<button class="filter-chip${filterCat==='all'?' active':''}" onclick="setFilter('all')" style="${filterCat==='all'?'background:var(--primary);color:#fff':''}">All</button>`
+    + cats.map(c=>`<button class="filter-chip${filterCat===c.id?' active':''}" onclick="setFilter('${c.id}')" style="${filterCat===c.id?`background:${c.color};color:#fff`:''}"><span>${c.emoji}</span> ${c.label}</button>`).join("");
+  renderHistoryList();
+}
+
+function setFilter(cat) { filterCat=cat; renderHistory(); }
+
+function renderHistoryList() {
+  const q = document.getElementById("search-input").value.toLowerCase();
+  document.getElementById("search-clear").style.display = q?"block":"none";
+
+  let filtered = state.expenses.filter(e => {
+    const cat = getCat(e.category);
+    const matchQ = !q || (e.note||"").toLowerCase().includes(q) || cat.label.toLowerCase().includes(q);
+    const matchF = filterCat==="all" || e.category===filterCat;
+    return matchQ && matchF;
+  });
+
+  // Group by date
+  const groups = {};
+  filtered.forEach(e => { if(!groups[e.date]) groups[e.date]=[]; groups[e.date].push(e); });
+  const sorted = Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0]));
+
+  const hl = document.getElementById("history-list");
+  if(!sorted.length){
+    hl.innerHTML=`<div class="empty-state"><div class="es-icon">📭</div><div class="es-title">No expenses found</div><div class="es-sub">Try a different search or filter</div></div>`;
+    return;
+  }
+  hl.innerHTML = sorted.map(([date,exps])=>{
+    const total = exps.reduce((s,e)=>s+Number(e.amount),0);
+    return `<div style="margin-bottom:20px">
+      <div class="group-header"><span class="group-date">${dispDate(date).toUpperCase()}</span><span class="group-total">${cur()}${total}</span></div>
+      <div class="card" style="padding:4px 0">
+        ${exps.map(e=>{
+          const cat=getCat(e.category);
+          return `<div class="exp-row">
+            <div class="exp-icon" style="background:${cat.color}22">${cat.emoji}</div>
+            <div style="flex:1"><div class="exp-title">${e.note||cat.label}</div><div class="exp-sub">${cat.label} • ${e.time}</div></div>
+            <div class="exp-amount">${cur()}${e.amount}</div>
+            <div class="exp-actions">
+              <button onclick="editExpense('${e.id}')">✏️</button>
+              <button onclick="deleteExpense('${e.id}')">🗑️</button>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function clearSearch() {
+  document.getElementById("search-input").value="";
+  document.getElementById("search-clear").style.display="none";
+  renderHistoryList();
+}
+
+document.getElementById("search-input").addEventListener("input", renderHistoryList);
+
+// ═══════════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════════
+function renderCalendar() {
+  const now = new Date();
+  if(calYear===undefined){ calYear=now.getFullYear(); calMonth=now.getMonth(); }
+  updateCalendar();
+}
+
+function updateCalendar() {
+  const mt = monthTotal(calYear, calMonth);
+  document.getElementById("cal-title").textContent = `${MONTHS[calMonth]} ${calYear}`;
+  document.getElementById("cal-total").textContent = `Total: ${cur()}${mt}`;
+  buildHeatmap("cal-heatmap", calYear, calMonth, 36);
+
+  const daysInMonth = new Date(calYear,calMonth+1,0).getDate();
+  const sbd = spendByDate();
+  let noSpend=0, active=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${calYear}-${pad(calMonth+1)}-${pad(d)}`;
+    if(sbd[ds]) active++; else noSpend++;
+  }
+  document.getElementById("cal-nospend").textContent = noSpend;
+  document.getElementById("cal-active").textContent = active;
+}
+
+function calPrev() {
+  if(calMonth===0){ calMonth=11; calYear--; } else calMonth--;
+  updateCalendar();
+}
+function calNext() {
+  if(calMonth===11){ calMonth=0; calYear++; } else calMonth++;
+  updateCalendar();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INSIGHTS
+// ═══════════════════════════════════════════════════════════
+function renderInsights() {
+  const ic = document.getElementById("insights-content");
+  if(!state.expenses.length){
+    ic.innerHTML=`<div class="empty-state"><div class="es-icon">📊</div><div class="es-title">Add expenses to see insights</div><div class="es-sub">Start tracking to unlock insights</div></div>`;
+    if(pieChart){pieChart.destroy();pieChart=null;}
+    if(barChart){barChart.destroy();barChart=null;}
+    return;
+  }
+
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay());
+  const monthExps = state.expenses.filter(e=>e.date.startsWith(thisMonth));
+  const weekExps = state.expenses.filter(e=>new Date(e.date+"T00:00:00")>=weekStart);
+  const monthTotal_ = monthExps.reduce((s,e)=>s+Number(e.amount),0);
+  const weekTotal_ = weekExps.reduce((s,e)=>s+Number(e.amount),0);
+  const streak = calcStreak();
+
+  // Cat data
+  const catMap={};
+  monthExps.forEach(e=>{ catMap[e.category]=(catMap[e.category]||0)+Number(e.amount); });
+  const catData = Object.entries(catMap).map(([id,val])=>{const c=getCat(id);return{name:c.label,value:val,color:c.color,emoji:c.emoji};}).sort((a,b)=>b.value-a.value);
+
+  // Weekly data
+  const weeklyLabels=["3w ago","2w ago","Last wk","This wk"];
+  const weeklyVals=[0,0,0,0];
+  state.expenses.forEach(e=>{
+    const diff=Math.floor((now-new Date(e.date+"T00:00:00"))/(7*24*3600*1000));
+    if(diff<4) weeklyVals[3-diff]+=Number(e.amount);
+  });
+
+  // Highest day
+  const dayMap={};
+  state.expenses.forEach(e=>{ const d=DAYS_FULL[new Date(e.date+"T00:00:00").getDay()]; dayMap[d]=(dayMap[d]||0)+Number(e.amount); });
+  const highestDay = Object.entries(dayMap).sort((a,b)=>b[1]-a[1])[0];
+  const noSpendWeek = 7-[...new Set(weekExps.map(e=>e.date))].length;
+  const topCat = catData[0];
+
+  // Insights
+  const insights=[];
+  if(topCat) insights.push({emoji:"🍽️",text:`You spent ${cur()}${topCat.value} on ${topCat.name} this month.`});
+  if(highestDay) insights.push({emoji:"📅",text:`${highestDay[0]} is your highest spending day.`});
+  if(noSpendWeek>0) insights.push({emoji:"🌿",text:`You had ${noSpendWeek} no-spend day${noSpendWeek>1?"s":""} this week.`});
+  if(streak>0) insights.push({emoji:"🔥",text:`${streak}-day no-spend streak! Keep saving!`});
+  if(weekTotal_>0) insights.push({emoji:"📊",text:`You spent ${cur()}${weekTotal_} this week.`});
+  if(topCat) insights.push({emoji:"🤖",text:`AI Tip: Try to cut ${topCat.name} by 20% to save ${cur()}${Math.round(topCat.value*.2)} this month.`});
+
+  ic.innerHTML = `
+    ${insights.map(i=>`<div class="insight-card"><span class="ic-emoji">${i.emoji}</span><span class="ic-text">${i.text}</span></div>`).join("")}
+    ${catData.length?`
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">By Category — ${MONTHS_S[now.getMonth()]}</div>
+      <div class="chart-wrap"><canvas id="pie-chart"></canvas></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        ${catData.map(c=>`<div class="legend-item"><div class="legend-dot" style="background:${c.color}"></div>${c.emoji} ${c.name} (${cur()}${c.value})</div>`).join("")}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">Weekly Spending</div>
+      <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
+    </div>`:""}
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">THIS MONTH</div><div class="stat-value">${cur()}${monthTotal_}</div><div class="stat-hint">${monthExps.length} transactions</div></div>
+      <div class="stat-card"><div class="stat-label">THIS WEEK</div><div class="stat-value">${cur()}${weekTotal_}</div><div class="stat-hint">${weekExps.length} transactions</div></div>
+    </div>
+  `;
+
+  if(catData.length) {
+    requestAnimationFrame(()=>{
+      // Pie
+      const pieEl = document.getElementById("pie-chart");
+      if(pieEl){
+        if(pieChart) pieChart.destroy();
+        pieChart = new Chart(pieEl, {
+          type:"doughnut",
+          data:{ labels:catData.map(c=>c.name), datasets:[{data:catData.map(c=>c.value),backgroundColor:catData.map(c=>c.color),borderWidth:0,hoverOffset:4}] },
+          options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${cur()}${ctx.parsed}`}}}, cutout:"55%", animation:{duration:600} }
+        });
+      }
+      // Bar
+      const barEl = document.getElementById("bar-chart");
+      if(barEl){
+        if(barChart) barChart.destroy();
+        barChart = new Chart(barEl, {
+          type:"bar",
+          data:{ labels:weeklyLabels, datasets:[{data:weeklyVals,backgroundColor:"#22C55E",borderRadius:8,borderSkipped:false}] },
+          options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${cur()}${ctx.parsed.y}`}}}, scales:{x:{grid:{display:false},ticks:{color:state.darkMode?"#8E8E93":"#8E8E93"}},y:{display:false}}, animation:{duration:600} }
+        });
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function renderSettings() {
+  document.getElementById("budget-input").value = state.budget;
+  document.getElementById("budget-currency-sym").textContent = cur();
+  document.getElementById("export-label").textContent = `Export CSV (${state.expenses.length} entries)`;
+
+  const dt = document.getElementById("dark-toggle");
+  dt.className = "toggle"+(state.darkMode?" on":"");
+
+  const cg = document.getElementById("currency-grid");
+  const currencies = ["₹","$","€","£","¥","৳"];
+  cg.innerHTML = currencies.map(c=>`<button class="cur-btn${state.currency===c?" active":""}" onclick="setCurrency('${c}')">${c}</button>`).join("");
+
+  renderCustomCats();
+}
+
+function setCurrency(c) { state.currency=c; save(); renderSettings(); renderHome(); }
+function saveBudget() { const v=Number(document.getElementById("budget-input").value); if(v>0){state.budget=v;save();renderHome();} }
+function toggleDark() { state.darkMode=!state.darkMode; document.body.className=state.darkMode?"dark":""; save(); renderSettings(); }
+function renderCustomCats() {
+  const cl = document.getElementById("custom-cat-list");
+  cl.innerHTML = state.customCats.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+    <span style="font-size:18px">${c.emoji}</span>
+    <span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">${c.label}</span>
+    <button onclick="removeCat('${c.id}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:18px">✕</button>
+  </div>`).join("");
+}
+function addCustomCat() {
+  const name=document.getElementById("new-cat-name").value.trim();
+  const emoji=document.getElementById("new-cat-emoji").value||"⭐";
+  if(!name) return;
+  const id=name.toLowerCase().replace(/\s+/g,"-")+"-"+uid().slice(0,4);
+  state.customCats.push({id,label:name,emoji,color:"#6B7280"});
+  document.getElementById("new-cat-name").value="";
+  document.getElementById("new-cat-emoji").value="";
+  save(); renderCustomCats();
+}
+function removeCat(id) { state.customCats=state.customCats.filter(c=>c.id!==id); save(); renderCustomCats(); }
+
+// ═══════════════════════════════════════════════════════════
+// ADD/EDIT EXPENSE
+// ═══════════════════════════════════════════════════════════
+function openAddModal(expId) {
+  editingId = expId||null;
+  const exp = expId ? state.expenses.find(e=>e.id===expId) : null;
+  document.getElementById("modal-title").textContent = expId?"Edit Expense":"New Expense";
+  document.getElementById("modal-currency").textContent = cur();
+  document.getElementById("modal-amount").value = exp?exp.amount:"";
+  document.getElementById("modal-note").value = exp?exp.note:"";
+  document.getElementById("modal-date").value = exp?exp.date:today();
+  document.getElementById("modal-time").value = exp?exp.time:nowTime();
+  selectedCat = exp?exp.category:"food";
+  renderModalCats();
+  document.getElementById("add-modal").style.display="flex";
+  setTimeout(()=>document.getElementById("modal-amount").focus(),300);
+}
+
+function renderModalCats() {
+  const cats = allCats();
+  document.getElementById("modal-cats").innerHTML = cats.map(c=>`
+    <button class="cat-chip${selectedCat===c.id?" active":""}" onclick="selectCat('${c.id}')"
+      style="${selectedCat===c.id?`background:${c.color};box-shadow:0 4px 12px ${c.color}55`:''}"
+      >${c.emoji} ${c.label}</button>`).join("");
+}
+
+function selectCat(id) { selectedCat=id; renderModalCats(); }
+
+function saveExpense() {
+  const amount = Number(document.getElementById("modal-amount").value);
+  if(!amount||amount<=0) { document.getElementById("modal-amount").focus(); return; }
+  const note = document.getElementById("modal-note").value.trim();
+  const date = document.getElementById("modal-date").value || today();
+  const time = document.getElementById("modal-time").value || nowTime();
+  const exp = { amount, category:selectedCat, note, date, day:dayFull(date), time };
+  if(editingId){
+    const idx = state.expenses.findIndex(e=>e.id===editingId);
+    if(idx>=0) state.expenses[idx]={...exp,id:editingId};
+  } else {
+    state.expenses.unshift({...exp,id:uid()});
+  }
+  save();
+  closeModal("add-modal");
+  renderScreen(document.querySelector(".screen.active").id.replace("screen-",""));
+}
+
+function editExpense(id) { openAddModal(id); }
+function deleteExpense(id) {
+  state.expenses=state.expenses.filter(e=>e.id!==id);
+  save();
+  const active=document.querySelector(".screen.active").id.replace("screen-","");
+  renderScreen(active);
+}
+
+function quickAdd(label, amount, category) {
+  state.expenses.unshift({id:uid(),amount,category,note:label,date:today(),day:dayFull(today()),time:nowTime()});
+  save(); renderHome();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DAY MODAL
+// ═══════════════════════════════════════════════════════════
+function openDayModal(ds) {
+  const exps = state.expenses.filter(e=>e.date===ds);
+  const total = exps.reduce((s,e)=>s+Number(e.amount),0);
+  document.getElementById("day-modal-title").textContent = dispDate(ds);
+  const content = document.getElementById("day-modal-content");
+  if(!exps.length){
+    content.innerHTML=`<div class="empty-state" style="padding:30px 0"><div class="es-icon">🌿</div><div class="es-title">No-Spend Day!</div><div class="es-sub">Great job saving money.</div></div>`;
+  } else {
+    content.innerHTML=`
+      ${exps.map((e,i)=>{const cat=getCat(e.category);return`
+        <div class="exp-row" style="${i<exps.length-1?'border-bottom:1px solid var(--border)':''}">
+          <div class="exp-icon" style="background:${cat.color}22">${cat.emoji}</div>
+          <div style="flex:1"><div class="exp-title">${e.note||cat.label}</div><div class="exp-sub">${cat.label} • ${e.time}</div></div>
+          <div class="exp-amount">${cur()}${e.amount}</div>
+          <div class="exp-actions">
+            <button onclick="editExpense('${e.id}');closeModal('day-modal')">✏️</button>
+            <button onclick="deleteExpense('${e.id}');updateDayModal('${ds}')">🗑️</button>
+          </div>
+        </div>`;}).join("")}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:2px solid var(--border);margin-top:4px">
+        <span style="color:var(--sub);font-weight:700;font-size:14px">Total</span>
+        <span style="color:var(--primary);font-weight:800;font-size:22px">${cur()}${total}</span>
+      </div>`;
+  }
+  document.getElementById("day-modal").style.display="flex";
+}
+
+function updateDayModal(ds) { openDayModal(ds); }
+
+// ═══════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).style.display="none"; }
+function handleOverlayClick(e, id) { if(e.target===e.currentTarget) closeModal(id); }
+function showResetConfirm() { document.getElementById("confirm-modal").style.display="flex"; }
+function resetAll() { state.expenses=[]; save(); closeModal("confirm-modal"); renderScreen("settings"); renderHome(); }
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportCSV() {
+  if(!state.expenses.length) return alert("No expenses to export!");
+  const rows=["ID,Amount,Category,Note,Date,Day,Time",...state.expenses.map(e=>`${e.id},${e.amount},${e.category},"${(e.note||"").replace(/"/g,'""')}",${e.date},${e.day},${e.time}`)].join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([rows],{type:"text/csv"}));
+  a.download="pocketflow-expenses.csv";
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded",()=>{
+  localStorage.removeItem("pocketflow");
+  load();
+  if(state.darkMode) document.body.className="dark";
+  renderHome();
+  setTimeout(()=>{
+    document.getElementById("loader").classList.add("hide");
+    setTimeout(()=>document.getElementById("loader").style.display="none",400);
+  },800);
+});
+</script>
+</body>
+</html>
